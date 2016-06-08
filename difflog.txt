@@ -1,0 +1,65 @@
+Complete list of changes from WordPress_Multi_AZ.template.json:
+1) Free tier
+2) Ease of testing
+3) EBS custom size
+4) Route53
+5) ELB security group
+6) RDS take and load snapshot
+7) S3 IAM role/profile creation
+8) S3 automatic backup cron
+9) S3 download at stack creation
+10) Wordpress plugin support (work in progress)
+
+original template link:
+https://s3-us-west-2.amazonaws.com/cloudformation-templates-us-west-2/WordPress_Multi_AZ.template
+
+diff program link:
+http://codebeautify.org/file-diff
++ means new addition, otherwise modified code
+
+Parameters:
+  InstanceType t2.small -> t2.micro (1 free tier)
+  DBClass db.t2.small -> db.t2.micro (1 free tier)
+  Default 0.0.0.0./0 -> <SSH IP addr> (2 +security)
+  +DBSnapshotIdentifier (6 RDS)
+  DBUser +default (6 db snapshot reuse)
+  DBPassword +default (6 db snapshot reuse)
+  +EBSVolumeSize 1-2147 (3 EBS custom)
+  +InstanceIAMRole (7 IAM)
+  DBAllocatedStorage 5-1024 -> 5-6144 (2 allow max db size)
+  +HostedZone (4 Route53)
+  +WordPressBucket (8 S3 backup/download)
+
+Conditions:
+  Is-EC2-VPC +us-west-2 (2 EC2-classic deprecated)
+  +UseRDSSnapshot (6 RDS)
+
+Resources:
+  ElasticLoadBalancer
+    Properties
+      HealthCheck (5 steady state)
+      +SecurityGroups (5 ELB sg)
+  +ElasticLoadBalancerSecurityGroup (5 ELB sg)
+  +DNSARecord (4 Route53)
+  WebServerSecurityGroup -old sg logic (5 ELB sg)
+  LaunchConfig
+    Metadata
+      AWS::CloudFormation::Init
+        configSets
+          +wordpress_update (9 s3 download)
+        install_cfn
+          files
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf (9 s3 download)
+        install_wordpress
+          files
+            /tmp/create-wp-config (8 s3 upload)
+        update_wordpress (9 s3 download)
+    Properties
+      UserData (9 s3 download)
+      IamInstanceProfile (7 IAM)
+      BlockDeviceMappings (3 EBS) */dev/sda tripup
+  +IAMInstanceProfile (7+ IAM)
+  DBInstance (6 RDS)
+
+Outputs:
+  WebsiteURL (4 Route53)
