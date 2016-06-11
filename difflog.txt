@@ -5,10 +5,19 @@ Complete list of changes from WordPress_Multi_AZ.template.json:
 4) Route53
 5) ELB security group
 6) RDS take and load snapshot
-7) S3 IAM role/profile creation
+7) S3 IAM role/profile linking
 8) S3 automatic backup cron
 9) S3 download at stack creation
-10) Wordpress plugin support (work in progress)
+10) Use php56/mysql56/httpd24 packages (from deprecated php 5.3)
+11) Improve support for plugins (WP limit logins, Wordfence)
+
+Future extension options:
+12) Use Varnish, Nginx, and/or caching to reduce EBS i/o
+13) Auto create s3 IAM role (and cleanup after stack termination)
+14) Auto create s3 backup bucket (and preserve after stack termination)
+15) Auto create CloudWatch monitors/alarms for stack (and cleanup)
+16) Implement Wordpress MS (multisite)
+17) HTTPS traffic for ELB
 
 original template link:
 https://s3-us-west-2.amazonaws.com/cloudformation-templates-us-west-2/WordPress_Multi_AZ.template
@@ -24,9 +33,9 @@ Parameters:
   +DBSnapshotIdentifier (6 RDS)
   DBUser +default (6 db snapshot reuse)
   DBPassword +default (6 db snapshot reuse)
-  +EBSVolumeSize 1-2147 (3 EBS custom)
+  +EBSVolumeSize 1-30 (3 EBS custom)
   +InstanceIAMRole (7 IAM)
-  DBAllocatedStorage 5-1024 -> 5-6144 (2 allow max db size)
+  DBAllocatedStorage 5-1024 -> 5-20 (2 db size free tier)
   +HostedZone (4 Route53)
   +WordPressBucket (8 S3 backup/download)
 
@@ -49,10 +58,11 @@ Resources:
           +wordpress_update (9 s3 download)
         install_cfn
           files
-            /etc/cfn/hooks.d/cfn-auto-reloader.conf (9 s3 download)
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf (11 improve application support)
         install_wordpress
+          packages (10,11 php56 packages, png image support)
           files
-            /tmp/create-wp-config (8 s3 upload)
+            /tmp/create-wp-config (8,9,11 s3 upload, download, wordfence support)
         update_wordpress (9 s3 download)
     Properties
       UserData (9 s3 download)
