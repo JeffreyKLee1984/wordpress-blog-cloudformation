@@ -1,0 +1,114 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "AWS CloudFormation Template to create S3 bucket with retain on stack delete with user defined bucket name. Also a create an associated IAM profile for read/write to the bucket. Uses us-west-2 ImageId (hardcoded).",
+
+  "Parameters" : {
+    "BucketName" : {
+      "Type" : "String",
+      "Default" : "test.bucket-001",
+      "Description" : "Path to back up bucket name.",
+      "MinLength": "3",
+      "MaxLength": "63",
+      "AllowedPattern" : "[a-z0-9][a-z0-9\\.\\-]*",
+      "ConstraintDescription" : "must be in allowed s3 format (3-63 lower case alphanumeric & hyphen & period)."
+    },
+
+    "SSHLocation": {
+      "Description": "The IP address range that can be used to SSH to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "xxx.xxx.xxx.xxx/32",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+
+    "KeyName": {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
+    }
+  },
+
+  "Resources" : {
+    "S3Bucket" : {
+      "Type" : "AWS::S3::Bucket",
+      "Properties" : {
+        "BucketName" : { "Ref" : "BucketName" }
+      },
+      "DeletionPolicy" : "Delete"
+    },
+
+    "TestEC2Instance" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : "ami-d0f506b0",
+        "InstanceType" : "t2.micro",
+        "SecurityGroups" : [ {"Ref" : "EC2ServerSecurityGroup"} ],
+        "KeyName"        : { "Ref" : "KeyName" },
+        "IamInstanceProfile" : { "Ref" : "IAMInstanceProfile" }
+      }
+    },
+
+    "EC2ServerSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable SSH access only",
+        "SecurityGroupIngress" : [ { "IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : { "Ref" : "SSHLocation" } } ]
+      }
+    },
+
+    "IAMInstanceProfile" : {
+      "Type" : "AWS::IAM::InstanceProfile",
+      "Properties" : {
+        "Path" : "/",
+        "Roles" : [ { "Ref" : "IAMInstanceRole" } ]
+      }
+    },
+
+    "IAMInstanceRole" : {
+      "Type" : "AWS::IAM::Role",
+      "Properties" : {
+        "AssumeRolePolicyDocument" : {
+          "Version" : "2012-10-17",
+          "Statement" : [ {
+            "Effect" : "Allow",
+            "Principal" : { "Service" : [ "ec2.amazonaws.com" ] },
+            "Action" : [ "sts:AssumeRole" ]
+          } ]
+        }
+      }
+    },
+
+    "IAMInstancePolicy" : {
+      "Type" : "AWS::IAM::Policy",
+      "Properties" : {
+        "PolicyName" : { "Fn::Join" : [ "", [ { "Ref" : "BucketName" }, "_policy" ] ] },
+        "PolicyDocument" : {
+          "Version" : "2012-10-17",
+          "Statement" : [ {
+              "Effect" : "Allow",
+              "Action" : "s3:ListAllMyBuckets",
+              "Resource" : "arn:aws:s3:::*"
+            }, {
+              "Effect" : "Allow",
+              "Action" : "s3:*",
+              "Resource" : [
+                { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref" : "BucketName" } ] ] },
+                { "Fn::Join" : [ "", [ "arn:aws:s3:::", { "Ref" : "BucketName" }, "/*" ] ] }
+              ]
+          } ]
+        },
+        "Roles" : [ { "Ref" : "IAMInstanceRole" } ]
+      }
+    }
+  },
+
+  "Outputs" : {
+    "EC2instanceURL" : {
+      "Value" : { "Fn::GetAtt" : [ "TestEC2Instance", "PublicDnsName" ] },
+      "Description" : "EC2 instance public DNS"
+    }
+  }
+}
