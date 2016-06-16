@@ -10,14 +10,16 @@ Complete list of changes from WordPress_Multi_AZ.template.json:
 9) S3 download at stack creation
 10) Use php56/mysql56/httpd24 packages (from deprecated php 5.3)
 11) Improve support for plugins (WP limit logins, Wordfence)
+12) Remove legacy support for EC2-Classic
+13) Auto create s3 IAM role (and cleanup after stack termination)
+14) Create s3 bucket for new Wordpress installs
+15) Initialize new Wordpress installs
 
 Future extension options:
-12) Use Varnish, Nginx, and/or caching to reduce EBS i/o
-13) Auto create s3 IAM role (and cleanup after stack termination)
-14) Auto create s3 backup bucket (and preserve after stack termination)
-15) Auto create CloudWatch monitors/alarms for stack (and cleanup)
-16) Implement Wordpress MS (multisite)
-17) HTTPS traffic for ELB
+15) Use Varnish, Nginx, and/or caching to reduce EBS i/o
+16) Auto create CloudWatch monitors/alarms for stack (and cleanup)
+17) Implement Wordpress MS (multisite)
+18) HTTPS traffic for ELB
 
 original template link:
 https://s3-us-west-2.amazonaws.com/cloudformation-templates-us-west-2/WordPress_Multi_AZ.template
