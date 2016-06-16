@@ -28,16 +28,29 @@
       "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instances",
       "Type": "AWS::EC2::KeyPair::KeyName",
       "ConstraintDescription" : "must be the name of an existing EC2 KeyPair."
+    },
+
+    "ReuseS3": {
+      "Default": "false",
+      "Description" : "Does S3 bucket already exist?",
+      "Type": "String",
+      "AllowedValues" : [ "true", "false" ],
+      "ConstraintDescription" : "must be either true or false."
     }
+  },
+
+  "Conditions" : {
+    "BucketNotExist" : { "Fn::Equals" : [ { "Ref" : "ReuseS3" }, "false" ] }
   },
 
   "Resources" : {
     "S3Bucket" : {
       "Type" : "AWS::S3::Bucket",
+      "Condition" : "BucketNotExist",
       "Properties" : {
         "BucketName" : { "Ref" : "BucketName" }
       },
-      "DeletionPolicy" : "Delete"
+      "DeletionPolicy" : "Retain"
     },
 
     "TestEC2Instance" : {
